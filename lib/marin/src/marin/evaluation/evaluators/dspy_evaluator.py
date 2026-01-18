@@ -44,9 +44,9 @@ class DspyEvaluator(Evaluator):
 
     def evaluate(
         self,
-        modules: dspy.Module,
+        model: dspy.Module,
         dataset: list[dspy.Example],
         optimizer: dspy.Teleprompter,
         **kwargs,
     ) -> None:
-        return self.langprobe.evaluate(modules, dataset, optimizer, **kwargs)
+        return self.langprobe.evaluate(model, dataset, optimizer, **kwargs)

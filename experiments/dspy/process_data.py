@@ -155,7 +155,8 @@ if __name__ == "__main__":
     start_inference_server(model_path="meta-llama/Meta-Llama-3.1-8B-Instruct", port=8000, device_type="tpu")
     time.sleep(10)
     print("Configuring DSPy...")
-    rm = dspy.ColBERTv2(url="http://20.102.90.50:2017/wiki17_abstracts")
+    colbert_url = os.environ.get("COLBERT_SERVER_URL", "http://20.102.90.50:2017/wiki17_abstracts")
+    rm = dspy.ColBERTv2(url=colbert_url)
     lm = dspy.LM(model="openai/gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
     dspy.settings.configure(lm=lm, rm=rm, adapter=BAMLAdapter())
 
