@@ -195,7 +195,7 @@ def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examp
     task_cfg = TASK_MAP[task_name]
 
     lm = dspy.LM(
-        model=f"openai/{model_name}",
+        model=model_name,
         base_url=endpoint,
         api_key=api_key,
         temperature=0.0,
