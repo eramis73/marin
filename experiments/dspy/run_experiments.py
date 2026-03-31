@@ -110,7 +110,6 @@ def _load_hover(split, max_examples):
     full = dl.from_huggingface(
         dataset_name="vincentkoc/hover-parquet",
         split="train",
-        trust_remote_code=True,
         fields=("claim", "label", "num_hops", "hpqa_id"),
         input_keys=("claim",),
     )
@@ -240,8 +239,7 @@ def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examp
             logger.warning(f"Example {i} failed: {exc}")
 
         trajectories.append(traj)
-        if (i + 1) % 10 == 0:
-            logger.info(f"{i+1}/{len(examples)} — accuracy: {total_score/(i+1):.2%}  format_errors: {total_errors/(i+1):.2%}")
+        logger.info(f"{i+1}/{len(examples)} — accuracy: {total_score/(i+1):.2%}  format_errors: {total_errors/(i+1):.2%}")
 
     n = len(examples)
     results = {
