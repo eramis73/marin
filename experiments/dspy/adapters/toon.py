@@ -169,10 +169,10 @@ class ToonAdapter(Adapter):
         if annotation is None or annotation is str:
             return value
 
-        # Handle list types (e.g. list[str]) — parse bullet lines
+        # Handle list types (e.g. list[str] or bare list) — parse bullet lines
         try:
             from typing import get_origin, get_args
-            if get_origin(annotation) is list:
+            if annotation is list or get_origin(annotation) is list:
                 lines = [l.lstrip("-•* ").strip() for l in value.splitlines()]
                 return [l for l in lines if l]
         except Exception:
