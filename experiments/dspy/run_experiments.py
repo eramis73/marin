@@ -239,7 +239,7 @@ def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examp
             logger.warning(f"Example {i} failed: {exc}")
 
         trajectories.append(traj)
-        logger.info(f"{i+1}/{len(examples)} — accuracy: {total_score/(i+1):.2%}  format_errors: {total_errors/(i+1):.2%}")
+        print(f"{i+1}/{len(examples)} — accuracy: {total_score/(i+1):.2%}  format_errors: {total_errors/(i+1):.2%}", flush=True)
 
     n = len(examples)
     results = {
