@@ -332,8 +332,16 @@ def _evaluate_allergy_fields(gold_record: Dict, result_record: Dict) -> tuple[in
     return matches, total
 
 
-def claim_verification_metric(example: dspy.Example, prediction: dspy.Prediction, trace = None) -> float:
-    return int(example.label == prediction.label_int)
+def claim_verification_metric(example: dspy.Example, prediction: dspy.Prediction, trace=None) -> float:
+    """Compare HoVer gold string label with prediction integer.
+
+    Gold label is 'SUPPORTED' or 'NOT_SUPPORTED' (string from HoVer).
+    ClaimVerification returns label_int which is 0 or 1.
+    """
+    if prediction is None:
+        return 0.0
+    gold_int = 1 if str(getattr(example, "label", "")).upper() == "SUPPORTED" else 0
+    return float(gold_int == getattr(prediction, "label_int", -1))
 
 
 def field_extraction_metric(example: dspy.Example, prediction: dspy.Prediction, trace = None) -> float:
