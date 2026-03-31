@@ -240,7 +240,7 @@ def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examp
 
         trajectories.append(traj)
         if (i + 1) % 10 == 0:
-            logger.info(f"{i+1}/{len(examples)} — running accuracy: {total_score/(i+1):.2%}")
+            logger.info(f"{i+1}/{len(examples)} — accuracy: {total_score/(i+1):.2%}  format_errors: {total_errors/(i+1):.2%}")
 
     n = len(examples)
     results = {
@@ -310,4 +310,4 @@ if __name__ == "__main__":
     print("\n\nSUMMARY")
     print("="*50)
     for adapter, r in all_results.items():
-        print(f"{adapter:10} accuracy={r['accuracy']:.2%}  errors={r['format_error_rate']:.2%}")
+        print(f"{adapter:10} accuracy={r['accuracy']:.2%}  format_errors={r['format_error_rate']:.2%}")
