@@ -191,7 +191,7 @@ def _build_bm25s_retriever():
 # Run one adapter
 # ---------------------------------------------------------------------------
 
-def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examples, output_path):
+def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examples, output_path, rm=None):
     task_cfg = TASK_MAP[task_name]
 
     lm = dspy.LM(
@@ -205,7 +205,8 @@ def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examp
     dspy.configure(lm=lm, adapter=adapter)
 
     examples = _load_hover(split, max_examples) if task_name == "hover" else _load_hotpotqa(split, max_examples)
-    rm = _build_bm25s_retriever()
+    if rm is None:
+        rm = _build_bm25s_retriever()
     program = task_cfg["program"](search=rm)
     metric  = task_cfg["metric"]
 
@@ -292,6 +293,8 @@ if __name__ == "__main__":
     parser.add_argument("--output_path",  default="outputs")
     args = parser.parse_args()
 
+    rm = _build_bm25s_retriever()
+
     all_results = {}
     for adapter in args.adapters:
         logger.info(f"\n>>> Running: {args.task} / {adapter}")
@@ -304,6 +307,7 @@ if __name__ == "__main__":
             split        = args.split,
             max_examples = args.max_examples,
             output_path  = args.output_path,
+            rm           = rm,
         )
         all_results[adapter] = r
 
