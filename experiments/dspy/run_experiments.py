@@ -194,16 +194,21 @@ def _build_bm25s_retriever():
 # Run one adapter
 # ---------------------------------------------------------------------------
 
-def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examples, output_path, rm=None, num_threads=32):
+def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examples, output_path, rm=None, num_threads=32, max_tokens=2000, enable_thinking=False):
     task_cfg = TASK_MAP[task_name]
 
-    lm = dspy.LM(
+    lm_kwargs = dict(
         model=model_name,
         base_url=endpoint,
         api_key=api_key,
         temperature=0.0,
         cache=False,
+        max_tokens=max_tokens,
     )
+    if not enable_thinking:
+        lm_kwargs["extra_body"] = {"chat_template_kwargs": {"enable_thinking": False}}
+
+    lm = dspy.LM(**lm_kwargs)
     adapter = ADAPTER_MAP[adapter_name]()
     dspy.configure(lm=lm, adapter=adapter)
 
@@ -299,8 +304,10 @@ if __name__ == "__main__":
     parser.add_argument("--task",         default="hover", choices=["hover", "hotpotqa"])
     parser.add_argument("--adapters",     nargs="+", default=["chat", "baml", "toon"])
     parser.add_argument("--split",        default="test")
-    parser.add_argument("--max_examples", type=int, default=50)
-    parser.add_argument("--output_path",  default="outputs")
+    parser.add_argument("--max_examples",   type=int,  default=50)
+    parser.add_argument("--output_path",    default="outputs")
+    parser.add_argument("--max_tokens",     type=int,  default=2000)
+    parser.add_argument("--enable_thinking",action="store_true", default=False)
     args = parser.parse_args()
 
     rm = _build_bm25s_retriever()
@@ -309,15 +316,17 @@ if __name__ == "__main__":
     for adapter in args.adapters:
         logger.info(f"\n>>> Running: {args.task} / {adapter}")
         r = run(
-            model_name   = args.model,
-            api_key      = args.api_key,
-            endpoint     = args.endpoint,
-            adapter_name = adapter,
-            task_name    = args.task,
-            split        = args.split,
-            max_examples = args.max_examples,
-            output_path  = args.output_path,
-            rm           = rm,
+            model_name      = args.model,
+            api_key         = args.api_key,
+            endpoint        = args.endpoint,
+            adapter_name    = adapter,
+            task_name       = args.task,
+            split           = args.split,
+            max_examples    = args.max_examples,
+            output_path     = args.output_path,
+            rm              = rm,
+            max_tokens      = args.max_tokens,
+            enable_thinking = args.enable_thinking,
         )
         all_results[adapter] = r
 
