@@ -18,6 +18,8 @@ import enum
 import json
 import logging
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -192,7 +194,7 @@ def _build_bm25s_retriever():
 # Run one adapter
 # ---------------------------------------------------------------------------
 
-def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examples, output_path, rm=None):
+def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examples, output_path, rm=None, num_threads=32):
     task_cfg = TASK_MAP[task_name]
 
     lm = dspy.LM(
@@ -211,12 +213,14 @@ def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examp
     program = task_cfg["program"](search=rm)
     metric  = task_cfg["metric"]
 
-    trajectories = []
+    trajectories = [None] * len(examples)
     total_score = 0.0
     total_errors = 0
+    completed = 0
+    lock = threading.Lock()
     start = time.time()
 
-    for i, example in enumerate(examples):
+    def process(i, example):
         traj = {
             "sample_id":     i,
             "input":         example.toDict() if hasattr(example, "toDict") else vars(example),
@@ -231,15 +235,23 @@ def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examp
             traj["output"]     = pred.toDict() if hasattr(pred, "toDict") else str(pred)
             traj["score"]      = score
             traj["hop_traces"] = getattr(pred, "hop_traces", [])
-            total_score += score
         except Exception as exc:
             traj["parsing_error"] = True
             traj["error"] = str(exc)
-            total_errors += 1
             logger.warning(f"Example {i} failed: {exc}")
+        return i, traj
 
-        trajectories.append(traj)
-        print(f"{i+1}/{len(examples)} — accuracy: {total_score/(i+1):.2%}  format_errors: {total_errors/(i+1):.2%}", flush=True)
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        futures = {executor.submit(process, i, ex): i for i, ex in enumerate(examples)}
+        for future in as_completed(futures):
+            i, traj = future.result()
+            trajectories[i] = traj
+            with lock:
+                total_errors += int(traj["parsing_error"])
+                total_score  += traj["score"] or 0.0
+                completed    += 1
+                done = completed
+            print(f"{done}/{len(examples)} — accuracy: {total_score/done:.2%}  format_errors: {total_errors/done:.2%}", flush=True)
 
     n = len(examples)
     results = {
