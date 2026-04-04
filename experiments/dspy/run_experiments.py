@@ -174,12 +174,14 @@ def _build_bm25s_retriever():
             corpus.append(f"{doc['title']} | {' '.join(doc['text'])}")
 
     logger.info(f"Indexing {len(corpus):,} passages...")
-    retriever = bm25s.BM25()
-    retriever.index(bm25s.tokenize(corpus))
+    import Stemmer
+    stemmer = Stemmer.Stemmer("english")
+    retriever = bm25s.BM25(k1=0.9, b=0.4)
+    retriever.index(bm25s.tokenize(corpus, stopwords="en", stemmer=stemmer))
     logger.info("BM25S ready.")
 
     def rm(query, k=3, **kwargs):
-        tokens = bm25s.tokenize(query, show_progress=False)
+        tokens = bm25s.tokenize(query, stopwords="en", stemmer=stemmer, show_progress=False)
         results, scores = retriever.retrieve(tokens, k=min(k, len(corpus)), n_threads=1, show_progress=False)
         return {corpus[idx]: float(sc) for idx, sc in zip(results[0], scores[0])}
 
