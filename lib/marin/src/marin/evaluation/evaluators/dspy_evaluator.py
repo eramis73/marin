@@ -383,12 +383,12 @@ class DspyEvaluator(Evaluator):
 
         for i, example in enumerate(examples):
             traj: dict = {
-                "sample_id":          i,
-                "input":              example.toDict() if hasattr(example, "toDict") else vars(example),
-                "output":             None,
-                "score":              None,
-                "parsing_error":      False,
-                "evidence_with_scores": [],   # BM25S scores saved here
+                "sample_id":   i,
+                "input":       example.toDict() if hasattr(example, "toDict") else vars(example),
+                "output":      None,
+                "score":       None,
+                "parsing_error": False,
+                "hop_traces":  [],
             }
 
             try:
@@ -400,10 +400,8 @@ class DspyEvaluator(Evaluator):
                 traj["score"]         = score
                 traj["parsing_error"] = has_error
 
-                # Save per-passage BM25S scores for Bayesian optimisation
-                passages = getattr(pred, "passages", None) or []
-                if passages:
-                    traj["evidence_with_scores"] = passages
+                # Save per-hop traces for SFT data generation
+                traj["hop_traces"] = getattr(pred, "hop_traces", [])
 
                 total_score += score
                 if has_error:

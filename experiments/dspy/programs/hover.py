@@ -1,18 +1,12 @@
 import dspy
-from enum import Enum
-
-
-class ClaimVerificationLabel(Enum):
-    SUPPORTED     = "SUPPORTED"
-    NOT_SUPPORTED = "NOT_SUPPORTED"
 
 
 class _HoverAnswerSignature(dspy.Signature):
-    """Verify whether the claim is supported or refuted based on the collected notes."""
+    """Verify whether the claim is supported or not supported based on the collected notes."""
 
     claim: str       = dspy.InputField()
     notes: list[str] = dspy.InputField()
-    label: ClaimVerificationLabel = dspy.OutputField()
+    label: str       = dspy.OutputField(desc='Respond with exactly "SUPPORTED" or "NOT_SUPPORTED".')
 
 
 class HoVer(dspy.Module):
@@ -24,21 +18,29 @@ class HoVer(dspy.Module):
         self.generate_answer = dspy.ChainOfThought(_HoverAnswerSignature)
 
     def forward(self, claim: str) -> dspy.Prediction:
-        notes        = []
-        all_passages = []
+        notes      = []
+        hop_traces = []
 
-        for _ in range(self.num_hops):
-            query   = self.generate_query(claim=claim, notes=notes).search_query
-            context = self.search(query, k=self.num_docs)
-            all_passages.extend([{"text": t, "score": s} for t, s in context.items()])
-            prediction = self.append_notes(claim=claim, notes=notes, context=context)
-            notes.extend(prediction.new_notes)
+        for hop_idx in range(self.num_hops):
+            query             = self.generate_query(claim=claim, notes=notes).search_query
+            context           = self.search(query, k=self.num_docs)
+            passages_this_hop = [{"text": t, "score": s} for t, s in context.items()]
+            prediction        = self.append_notes(claim=claim, notes=notes, context=context)
+            new_notes         = prediction.new_notes
+            notes.extend(new_notes)
+
+            hop_traces.append({
+                "hop":          hop_idx + 1,
+                "search_query": query,
+                "context":      passages_this_hop,
+                "new_notes":    new_notes,
+            })
 
         pred = self.generate_answer(claim=claim, notes=notes)
 
         return dspy.Prediction(
-            notes     = notes,
-            passages  = all_passages,
-            label     = pred.label,
-            label_int = int(pred.label == ClaimVerificationLabel.SUPPORTED),
+            notes      = notes,
+            hop_traces = hop_traces,
+            label      = pred.label,
+            label_int  = int(str(pred.label).upper() == "SUPPORTED"),
         )

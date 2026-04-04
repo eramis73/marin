@@ -65,7 +65,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "lib" / "marin" / "
 
 from experiments.dspy.adapters.baml import BAMLAdapter
 from experiments.dspy.adapters.toon import ToonAdapter
-from experiments.dspy.programs.hover import HoVer, ClaimVerificationLabel
+from experiments.dspy.programs.hover import HoVer
 from experiments.dspy.programs.hotpotqa import HotpotQA
 
 
@@ -218,21 +218,19 @@ def run(model_name, api_key, endpoint, adapter_name, task_name, split, max_examp
 
     for i, example in enumerate(examples):
         traj = {
-            "sample_id": i,
-            "input":     example.toDict() if hasattr(example, "toDict") else vars(example),
-            "output":    None,
-            "score":     None,
+            "sample_id":     i,
+            "input":         example.toDict() if hasattr(example, "toDict") else vars(example),
+            "output":        None,
+            "score":         None,
             "parsing_error": False,
-            "evidence_with_scores": [],
+            "hop_traces":    [],
         }
         try:
             pred  = program(**example.inputs())
             score = float(metric(example, pred))
-            traj["output"] = pred.toDict() if hasattr(pred, "toDict") else str(pred)
-            traj["score"]  = score
-            passages = getattr(pred, "passages", None) or []
-            if passages:
-                traj["evidence_with_scores"] = passages
+            traj["output"]     = pred.toDict() if hasattr(pred, "toDict") else str(pred)
+            traj["score"]      = score
+            traj["hop_traces"] = getattr(pred, "hop_traces", [])
             total_score += score
         except Exception as exc:
             traj["parsing_error"] = True
