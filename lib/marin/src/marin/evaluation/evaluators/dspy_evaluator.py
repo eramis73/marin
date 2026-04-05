@@ -8,7 +8,9 @@ from typing import Any
 import dspy
 import requests
 from experiments.dspy.adapters.baml import BAMLAdapter
+from experiments.dspy.adapters.gbnf import GBNFAdapter
 from experiments.dspy.adapters.toon import ToonAdapter
+from experiments.dspy.adapters.xgrammar import XGrammarAdapter
 from experiments.dspy.programs.hover import HoVer
 from experiments.dspy.programs.hotpotqa import HotpotQA
 from marin.evaluation.evaluators.evaluator import Evaluator, ModelConfig
@@ -32,7 +34,9 @@ class _EnumSafeEncoder(json.JSONEncoder):
 ADAPTER_MAP: dict[str, type[dspy.Adapter]] = {
     "baml": BAMLAdapter,
     "chat": dspy.ChatAdapter,
+    "gbnf": GBNFAdapter,
     "toon": ToonAdapter,
+    "xgrammar": XGrammarAdapter,
 }
 
 
